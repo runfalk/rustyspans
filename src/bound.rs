@@ -36,6 +36,7 @@ impl<T: PartialOrd> Bound<T> {
             }
         }
 
+        // The relation between an unbounded value and a bounded one
         let unbounded_order = match type_ {
             BoundType::Lower => Ordering::Less,
             BoundType::Upper => Ordering::Greater,

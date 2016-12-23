@@ -49,11 +49,19 @@ impl<T> From<RangeOp<Bound<T>>> for Range<T> {
     }
 }
 
-impl From<RangeOp<i32>> for Range<i32> {
-    fn from(range: RangeOp<i32>) -> Range<i32> {
-        Range::from(Inclusive(range.start) .. Exclusive(range.end))
-    }
+// Add shorthands for common range types such as Range::from(1..10). The lower
+// end is always inclusive and the upper end is always exclusive.
+macro_rules! add_impl {
+    ($($t:ty)*) => ($(
+        impl From<RangeOp<$t>> for Range<$t> {
+            fn from(range: RangeOp<$t>) -> Range<$t> {
+                Range::from(Inclusive(range.start) .. Exclusive(range.end))
+            }
+        }
+    )*)
 }
+
+add_impl! { usize u8 u16 u32 u64 isize i8 i16 i32 i64 f32 f64 }
 
 impl<T: Clone> Range<T> {
     pub fn lower(&self) -> Bound<T> {
