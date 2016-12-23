@@ -40,6 +40,24 @@ impl<T> Range<T> {
     }
 }
 
+impl<T: PartialOrd> Range<T> {
+    pub fn contains(&self, item: &T) -> bool {
+        let within_lower = match self.lower {
+            Inclusive(ref lower) => item >= lower,
+            Exclusive(ref lower) => item > lower,
+            Unbounded => true,
+        };
+
+        let within_upper = match self.upper {
+            Inclusive(ref upper) => item <= upper,
+            Exclusive(ref upper) => item < upper,
+            Unbounded => true,
+        };
+
+        within_lower && within_upper
+    }
+}
+
 impl<T> From<RangeOp<Bound<T>>> for Range<T> {
     fn from(range: RangeOp<Bound<T>>) -> Range<T> {
         Range {
