@@ -2,5 +2,9 @@
 name = "rustyspans"
 version = "0.1.0"
 authors = ["Andreas Runfalk <andreas@runfalk.se>"]
+description = "An implementation of PostgreSQL's range type in pure Rust."
+repository = "https://github.com/runfalk/rustyspans"
+readme = "README.md"
+license = "MIT"
 
 [dependencies]
