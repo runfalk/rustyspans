@@ -4,66 +4,86 @@ use std::ops::Range as RangeOp;
 
 use super::bound::{BoundType, Bound};
 
-// Unpack Bound into scope to reduce verbosity
+// Unpack Bound and Range into scope to reduce verbosity
 use super::bound::Bound::*;
+use self::Range::*;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Range<T> {
+pub struct Interval<T> {
     lower: Bound<T>,
     upper: Bound<T>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum Range<T> {
+    Inhabited(Interval<T>),
+    Empty,
+}
+
 impl<T> Range<T> {
     pub fn new(lower: Bound<T>, upper: Bound<T>) -> Range<T> {
-        Range {
+        Inhabited(Interval {
             lower: lower,
             upper: upper,
-        }
+        })
     }
 
     pub fn lower_inf(&self) -> bool {
-        match self.lower {
-            Bound::Unbounded => true,
-            _ => false,
+        match *self {
+            Inhabited(ref range) => match range.lower {
+                Bound::Unbounded => true,
+                _ => false,
+            },
+            Empty => false,
         }
     }
 
     pub fn upper_inf(&self) -> bool {
-        match self.upper {
-            Bound::Unbounded => true,
-            _ => false,
+        match *self {
+            Inhabited(ref range) => match range.upper {
+                Bound::Unbounded => true,
+                _ => false,
+            },
+            Empty => false,
         }
     }
 
     pub fn is_bounded(&self) -> bool {
-        self.lower.is_bounded() && self.upper.is_bounded()
+        match *self {
+            Inhabited(ref range) => {
+                range.lower.is_bounded() && range.upper.is_bounded()
+            },
+            Empty => true,
+        }
     }
 }
 
 impl<T: PartialOrd> Range<T> {
     pub fn contains(&self, item: &T) -> bool {
-        let within_lower = match self.lower {
-            Inclusive(ref lower) => item >= lower,
-            Exclusive(ref lower) => item > lower,
-            Unbounded => true,
-        };
+        match *self {
+            Inhabited(ref range) => {
+                let within_lower = match range.lower {
+                    Inclusive(ref lower) => item >= lower,
+                    Exclusive(ref lower) => item > lower,
+                    Unbounded => true,
+                };
 
-        let within_upper = match self.upper {
-            Inclusive(ref upper) => item <= upper,
-            Exclusive(ref upper) => item < upper,
-            Unbounded => true,
-        };
+                let within_upper = match range.upper {
+                    Inclusive(ref upper) => item <= upper,
+                    Exclusive(ref upper) => item < upper,
+                    Unbounded => true,
+                };
 
-        within_lower && within_upper
+                within_lower && within_upper
+            },
+            Empty => false,
+        }
     }
 }
 
 impl<T> From<RangeOp<Bound<T>>> for Range<T> {
     fn from(range: RangeOp<Bound<T>>) -> Range<T> {
-        Range {
-            lower: range.start,
-            upper: range.end,
-        }
+        Range::new(range.start, range.end)
     }
 }
 
@@ -82,40 +102,59 @@ macro_rules! from_rangeop_impl_for_range {
 from_rangeop_impl_for_range! { usize u8 u16 u32 u64 isize i8 i16 i32 i64 f32 f64 }
 
 impl<T: Clone> Range<T> {
-    pub fn lower(&self) -> Bound<T> {
-        self.lower.clone()
+    pub fn lower(&self) -> Option<Bound<T>> {
+        match *self {
+            Inhabited(ref range) => Some(range.lower.clone()),
+            Empty => None,
+        }
     }
 
-    pub fn upper(&self) -> Bound<T> {
-        self.upper.clone()
+    pub fn upper(&self) -> Option<Bound<T>> {
+        match *self {
+            Inhabited(ref range) => Some(range.upper.clone()),
+            Empty => None,
+        }
     }
 }
 
 impl<T: fmt::Display> fmt::Display for Range<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.lower {
-            Bound::Inclusive(ref x) => write!(f, "[{}", x),
-            Bound::Exclusive(ref x) => write!(f, "({}", x),
-            Bound::Unbounded => write!(f, "("),
-        }?;
+        match *self {
+            Inhabited(ref range) => {
+                match range.lower {
+                    Bound::Inclusive(ref x) => write!(f, "[{}", x),
+                    Bound::Exclusive(ref x) => write!(f, "({}", x),
+                    Bound::Unbounded => write!(f, "("),
+                }?;
 
-        write!(f, ",")?;
+                write!(f, ",")?;
 
-        match self.upper {
-            Bound::Inclusive(ref x) => write!(f, "{}]", x),
-            Bound::Exclusive(ref x) => write!(f, "{})", x),
-            Bound::Unbounded => write!(f, ")"),
+                match range.upper {
+                    Bound::Inclusive(ref x) => write!(f, "{}]", x),
+                    Bound::Exclusive(ref x) => write!(f, "{})", x),
+                    Bound::Unbounded => write!(f, ")"),
+                }
+            },
+            Empty => write!(f, "(empty)"),
         }
     }
 }
 
 impl<T: PartialOrd> PartialOrd for Range<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match Bound::compare_bounds(BoundType::Lower, &self.lower, &other.lower) {
-            Some(Ordering::Equal) => {
-                Bound::compare_bounds(BoundType::Upper, &self.upper, &other.upper)
+        match (self, other) {
+            (&Inhabited(ref a), &Inhabited(ref b)) => {
+                match Bound::compare_bounds(
+                    BoundType::Lower, &a.lower, &b.lower)
+                {
+                    Some(Ordering::Equal) => {
+                        Bound::compare_bounds(
+                            BoundType::Upper, &a.upper, &b.upper)
+                    },
+                    cmp => cmp,
+                }
             },
-            cmp => cmp,
+            _ => None,
         }
     }
 }
