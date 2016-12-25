@@ -68,6 +68,17 @@ impl<T> Range<T> {
         }
     }
 
+    pub fn is_inhabited(&self) -> bool {
+        match *self {
+            Inhabited(_) => true,
+            Empty => false,
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        !self.is_inhabited()
+    }
+
     pub fn is_bounded(&self) -> bool {
         match *self {
             Inhabited(ref range) => {

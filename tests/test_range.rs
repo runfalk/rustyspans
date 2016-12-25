@@ -48,6 +48,24 @@ fn upper_inc() {
 }
 
 #[test]
+fn is_inhabited() {
+    assert!(!Range::Empty::<i32>.is_inhabited());
+    assert!(Range::from(1..10).is_inhabited());
+    assert!(Range::from(1..).is_inhabited());
+    assert!(Range::from(..10).is_inhabited());
+    assert!(Range::<i32>::from(..).is_inhabited());
+}
+
+#[test]
+fn is_empty() {
+    assert!(Range::Empty::<i32>.is_empty());
+    assert!(!Range::from(1..10).is_empty());
+    assert!(!Range::from(1..).is_empty());
+    assert!(!Range::from(..10).is_empty());
+    assert!(!Range::<i32>::from(..).is_empty());
+}
+
+#[test]
 fn is_bounded() {
     assert!(Range::Empty::<i32>.is_bounded());
     assert!(Range::from(1..10).is_bounded());
