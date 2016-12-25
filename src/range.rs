@@ -48,6 +48,26 @@ impl<T> Range<T> {
         }
     }
 
+    pub fn lower_inc(&self) -> bool {
+        match *self {
+            Inhabited(ref range) => match range.lower {
+                Bound::Inclusive(_) => true,
+                _ => false,
+            },
+            Empty => false,
+        }
+    }
+
+    pub fn upper_inc(&self) -> bool {
+        match *self {
+            Inhabited(ref range) => match range.upper {
+                Bound::Inclusive(_) => true,
+                _ => false,
+            },
+            Empty => false,
+        }
+    }
+
     pub fn is_bounded(&self) -> bool {
         match *self {
             Inhabited(ref range) => {

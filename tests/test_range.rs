@@ -32,6 +32,22 @@ fn upper_inf() {
 }
 
 #[test]
+fn lower_inc() {
+    assert!(!Range::Empty::<i32>.lower_inc());
+    assert!(!Range::<i32>::from(..).lower_inc());
+    assert!(Range::from(1..).lower_inc());
+    assert!(!Range::from(Exclusive(1)..).lower_inc());
+}
+
+#[test]
+fn upper_inc() {
+    assert!(!Range::Empty::<i32>.upper_inc());
+    assert!(!Range::<i32>::from(..).upper_inc());
+    assert!(!Range::from(..10).upper_inc());
+    assert!(Range::from(..Inclusive(10)).upper_inc());
+}
+
+#[test]
 fn is_bounded() {
     assert!(Range::Empty::<i32>.is_bounded());
     assert!(Range::from(1..10).is_bounded());
