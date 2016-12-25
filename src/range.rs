@@ -14,6 +14,18 @@ pub struct Interval<T> {
     upper: Bound<T>,
 }
 
+impl<T: PartialOrd> PartialOrd for Interval<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match Bound::compare_bounds(BoundType::Lower, &self.lower, &other.lower)
+        {
+            Some(Ordering::Equal) => {
+                Bound::compare_bounds(BoundType::Upper, &self.upper, &other.upper)
+            },
+            cmp => cmp,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Range<T> {
     Inhabited(Interval<T>),
@@ -205,17 +217,7 @@ impl<T: fmt::Display> fmt::Display for Range<T> {
 impl<T: PartialOrd> PartialOrd for Range<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            (&Inhabited(ref a), &Inhabited(ref b)) => {
-                match Bound::compare_bounds(
-                    BoundType::Lower, &a.lower, &b.lower)
-                {
-                    Some(Ordering::Equal) => {
-                        Bound::compare_bounds(
-                            BoundType::Upper, &a.upper, &b.upper)
-                    },
-                    cmp => cmp,
-                }
-            },
+            (&Inhabited(ref a), &Inhabited(ref b)) => a.partial_cmp(&b),
             _ => None,
         }
     }
