@@ -16,10 +16,10 @@ pub struct Interval<T> {
 
 impl<T: PartialOrd> PartialOrd for Interval<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match Bound::compare_bounds(BoundType::Lower, &self.lower, &other.lower)
+        match Bound::compare_bounds(BoundType::Lower, BoundType::Lower, &self.lower, &other.lower)
         {
             Some(Ordering::Equal) => {
-                Bound::compare_bounds(BoundType::Upper, &self.upper, &other.upper)
+                Bound::compare_bounds(BoundType::Upper, BoundType::Upper, &self.upper, &other.upper)
             },
             cmp => cmp,
         }

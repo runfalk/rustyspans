@@ -1,7 +1,8 @@
 use std::cmp::Ordering;
 
-// Unpack Bound into scope to reduce verbosity
+// Unpack Bound and BoundType into scope to reduce verbosity
 use Bound::*;
+use BoundType::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum BoundType {
@@ -26,39 +27,58 @@ impl<T> Bound<T> {
 }
 
 impl<T: PartialOrd> Bound<T> {
-    pub fn compare_bounds(type_: BoundType, a: &Bound<T>, b: &Bound<T>) -> Option<Ordering> {
-        #[inline]
-        fn invert_order(cmp: Ordering) -> Ordering {
-            match cmp {
-                Ordering::Less => Ordering::Greater,
-                Ordering::Equal => Ordering::Equal,
-                Ordering::Greater => Ordering::Less,
-            }
-        }
-
-        // The relation between an unbounded value and a bounded one
-        let unbounded_order = match type_ {
-            BoundType::Lower => Ordering::Less,
-            BoundType::Upper => Ordering::Greater,
-        };
-
+    pub fn compare_bounds(a_type: BoundType, b_type: BoundType, a: &Bound<T>, b: &Bound<T>) -> Option<Ordering> {
         match (a, b) {
-            (&Unbounded, &Unbounded) => Some(Ordering::Equal),
+            (&Unbounded, &Unbounded) => Some(match (a_type, b_type) {
+                (Lower, Lower) | (Upper, Upper) => Ordering::Equal,
+                (Lower, Upper) => Ordering::Less,
+                (Upper, Lower) => Ordering::Greater,
+            }),
             (&Unbounded, &Inclusive(_)) |
-            (&Unbounded, &Exclusive(_)) => Some(unbounded_order),
+            (&Unbounded, &Exclusive(_)) => Some(match (a_type, b_type) {
+                (Lower, _) => Ordering::Less,
+                (Upper, _) => Ordering::Greater,
+            }),
             (&Inclusive(_), &Unbounded) |
-            (&Exclusive(_), &Unbounded) => Some(invert_order(unbounded_order)),
-            (&Inclusive(ref a), &Inclusive(ref b)) |
-            (&Exclusive(ref a), &Exclusive(ref b)) => a.partial_cmp(&b),
+            (&Exclusive(_), &Unbounded) => Some(match (a_type, b_type) {
+                (_, Lower) => Ordering::Greater,
+                (_, Upper) => Ordering::Less,
+            }),
+            (&Inclusive(ref a), &Inclusive(ref b)) => {
+                match a.partial_cmp(&b) {
+                    Some(Ordering::Equal) => Some(match (a_type, b_type) {
+                        (Lower, Lower) | (Upper, Upper) => Ordering::Equal,
+                        (Lower, Upper) => Ordering::Greater,
+                        (Upper, Lower) => Ordering::Less,
+                    }),
+                    cmp => cmp,
+                }
+            },
+            (&Exclusive(ref a), &Exclusive(ref b)) => {
+                match a.partial_cmp(&b) {
+                    Some(Ordering::Equal) => Some(match (a_type, b_type) {
+                        (Lower, Lower) | (Upper, Upper) => Ordering::Equal,
+                        (Lower, Upper) => Ordering::Less,
+                        (Upper, Lower) => Ordering::Greater,
+                    }),
+                    cmp => cmp,
+                }
+            },
             (&Inclusive(ref a), &Exclusive(ref b)) => {
                 match a.partial_cmp(&b) {
-                    Some(Ordering::Equal) => Some(unbounded_order),
+                    Some(Ordering::Equal) => Some(match (a_type, b_type) {
+                        (_, Lower) => Ordering::Less,
+                        (_, Upper) => Ordering::Greater,
+                    }),
                     cmp => cmp,
                 }
             },
             (&Exclusive(ref a), &Inclusive(ref b)) => {
                 match a.partial_cmp(&b) {
-                    Some(Ordering::Equal) => Some(invert_order(unbounded_order)),
+                    Some(Ordering::Equal) => Some(match (a_type, b_type) {
+                        (_, Lower) => Ordering::Greater,
+                        (_, Upper) => Ordering::Less,
+                    }),
                     cmp => cmp,
                 }
             }
