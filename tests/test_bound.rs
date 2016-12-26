@@ -20,7 +20,7 @@ fn equality() {
 #[test]
 fn compare_bounds_lower() {
     fn cmp<T: PartialOrd>(a: &Bound<T>, b: &Bound<T>) -> Ordering {
-        Bound::compare_bounds(BoundType::Lower, BoundType::Lower, &a, &b).unwrap()
+        BoundType::Lower(&a).partial_cmp(&BoundType::Lower(&b)).unwrap()
     }
 
     assert_eq!(Ordering::Equal, cmp::<i32>(&Unbounded, &Unbounded));
@@ -40,7 +40,7 @@ fn compare_bounds_lower() {
 #[test]
 fn compare_bounds_upper() {
     fn cmp<T: PartialOrd>(a: &Bound<T>, b: &Bound<T>) -> Ordering {
-        Bound::compare_bounds(BoundType::Upper, BoundType::Upper, &a, &b).unwrap()
+        BoundType::Upper(&a).partial_cmp(&BoundType::Upper(&b)).unwrap()
     }
 
     assert_eq!(Ordering::Equal, cmp::<i32>(&Unbounded, &Unbounded));

@@ -4,10 +4,98 @@ use std::cmp::Ordering;
 use Bound::*;
 use BoundType::*;
 
+
 #[derive(Clone, Debug, PartialEq)]
-pub enum BoundType {
-    Lower,
-    Upper,
+pub enum BoundType<'a, T: 'a> {
+    Lower(&'a Bound<T>),
+    Upper(&'a Bound<T>),
+}
+
+impl<'a, T: 'a + PartialOrd> PartialOrd for BoundType<'a, T> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (self, other) {
+            (&Lower(ref a), &Lower(ref b)) => {
+                match (*a, *b) {
+                    (&Unbounded, &Unbounded) => Some(Ordering::Equal),
+                    (&Unbounded, _) => Some(Ordering::Less),
+                    (_, &Unbounded) => Some(Ordering::Greater),
+                    (&Inclusive(ref a), &Inclusive(ref b)) |
+                    (&Exclusive(ref a), &Exclusive(ref b)) => a.partial_cmp(&b),
+                    (&Inclusive(ref a), &Exclusive(ref b)) => {
+                        match a.partial_cmp(&b) {
+                            Some(Ordering::Equal) => Some(Ordering::Less),
+                            cmp => cmp,
+                        }
+                    },
+                    (&Exclusive(ref a), &Inclusive(ref b)) => {
+                        match a.partial_cmp(&b) {
+                            Some(Ordering::Equal) => Some(Ordering::Greater),
+                            cmp => cmp,
+                        }
+                    },
+                }
+            },
+            (&Upper(ref a), &Upper(ref b)) => {
+                match (*a, *b) {
+                    (&Unbounded, &Unbounded) => Some(Ordering::Equal),
+                    (&Unbounded, _) => Some(Ordering::Greater),
+                    (_, &Unbounded) => Some(Ordering::Less),
+                    (&Inclusive(ref a), &Inclusive(ref b)) |
+                    (&Exclusive(ref a), &Exclusive(ref b)) => a.partial_cmp(&b),
+                    (&Inclusive(ref a), &Exclusive(ref b)) => {
+                        match a.partial_cmp(&b) {
+                            Some(Ordering::Equal) => Some(Ordering::Greater),
+                            cmp => cmp,
+                        }
+                    },
+                    (&Exclusive(ref a), &Inclusive(ref b)) => {
+                        match a.partial_cmp(&b) {
+                            Some(Ordering::Equal) => Some(Ordering::Less),
+                            cmp => cmp,
+                        }
+                    },
+                }
+            },
+            (&Lower(ref a), &Upper(ref b)) => {
+                match (*a, *b) {
+                    (&Unbounded, _) | (_, &Unbounded) => Some(Ordering::Less),
+                    (&Inclusive(ref a), &Inclusive(ref b)) => {
+                        match a.partial_cmp(&b) {
+                            Some(Ordering::Equal) => Some(Ordering::Less),
+                            cmp => cmp,
+                        }
+                    }
+                    (&Exclusive(ref a), &Exclusive(ref b)) => {
+                        match a.partial_cmp(&b) {
+                            Some(Ordering::Equal) => Some(Ordering::Greater),
+                            cmp => cmp,
+                        }
+                    },
+                    (&Inclusive(ref a), &Exclusive(ref b)) |
+                    (&Exclusive(ref a), &Inclusive(ref b)) => a.partial_cmp(&b),
+                }
+            },
+            (&Upper(ref a), &Lower(ref b)) => {
+                match (*a, *b) {
+                    (&Unbounded, _) | (_, &Unbounded) => Some(Ordering::Greater),
+                    (&Inclusive(ref a), &Inclusive(ref b)) => {
+                        match a.partial_cmp(&b) {
+                            Some(Ordering::Equal) => Some(Ordering::Greater),
+                            cmp => cmp,
+                        }
+                    }
+                    (&Exclusive(ref a), &Exclusive(ref b)) => {
+                        match a.partial_cmp(&b) {
+                            Some(Ordering::Equal) => Some(Ordering::Less),
+                            cmp => cmp,
+                        }
+                    },
+                    (&Inclusive(ref a), &Exclusive(ref b)) |
+                    (&Exclusive(ref a), &Inclusive(ref b)) => a.partial_cmp(&b),
+                }
+            },
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -22,66 +110,6 @@ impl<T> Bound<T> {
         match *self {
             Bound::Unbounded => false,
             _ => true,
-        }
-    }
-}
-
-impl<T: PartialOrd> Bound<T> {
-    pub fn compare_bounds(a_type: BoundType, b_type: BoundType, a: &Bound<T>, b: &Bound<T>) -> Option<Ordering> {
-        match (a, b) {
-            (&Unbounded, &Unbounded) => Some(match (a_type, b_type) {
-                (Lower, Lower) | (Upper, Upper) => Ordering::Equal,
-                (Lower, Upper) => Ordering::Less,
-                (Upper, Lower) => Ordering::Greater,
-            }),
-            (&Unbounded, &Inclusive(_)) |
-            (&Unbounded, &Exclusive(_)) => Some(match (a_type, b_type) {
-                (Lower, _) => Ordering::Less,
-                (Upper, _) => Ordering::Greater,
-            }),
-            (&Inclusive(_), &Unbounded) |
-            (&Exclusive(_), &Unbounded) => Some(match (a_type, b_type) {
-                (_, Lower) => Ordering::Greater,
-                (_, Upper) => Ordering::Less,
-            }),
-            (&Inclusive(ref a), &Inclusive(ref b)) => {
-                match a.partial_cmp(&b) {
-                    Some(Ordering::Equal) => Some(match (a_type, b_type) {
-                        (Lower, Lower) | (Upper, Upper) => Ordering::Equal,
-                        (Lower, Upper) => Ordering::Greater,
-                        (Upper, Lower) => Ordering::Less,
-                    }),
-                    cmp => cmp,
-                }
-            },
-            (&Exclusive(ref a), &Exclusive(ref b)) => {
-                match a.partial_cmp(&b) {
-                    Some(Ordering::Equal) => Some(match (a_type, b_type) {
-                        (Lower, Lower) | (Upper, Upper) => Ordering::Equal,
-                        (Lower, Upper) => Ordering::Less,
-                        (Upper, Lower) => Ordering::Greater,
-                    }),
-                    cmp => cmp,
-                }
-            },
-            (&Inclusive(ref a), &Exclusive(ref b)) => {
-                match a.partial_cmp(&b) {
-                    Some(Ordering::Equal) => Some(match (a_type, b_type) {
-                        (_, Lower) => Ordering::Less,
-                        (_, Upper) => Ordering::Greater,
-                    }),
-                    cmp => cmp,
-                }
-            },
-            (&Exclusive(ref a), &Inclusive(ref b)) => {
-                match a.partial_cmp(&b) {
-                    Some(Ordering::Equal) => Some(match (a_type, b_type) {
-                        (_, Lower) => Ordering::Greater,
-                        (_, Upper) => Ordering::Less,
-                    }),
-                    cmp => cmp,
-                }
-            }
         }
     }
 }
