@@ -1,10 +1,7 @@
-#![deny(dead_code)]
-extern crate rustyspans;
-
 use std::cmp::Ordering;
 
-use rustyspans::Range;
-use rustyspans::Bound::*;
+use super::Range;
+use ::bound::Bound::*;
 
 #[test]
 fn from_i32_range() {

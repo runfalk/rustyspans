@@ -108,8 +108,13 @@ pub enum Bound<T> {
 impl<T> Bound<T> {
     pub fn is_bounded(&self) -> bool {
         match *self {
-            Bound::Unbounded => false,
+            Unbounded => false,
             _ => true,
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    include!("test_bound.rs");
 }

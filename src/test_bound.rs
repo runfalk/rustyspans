@@ -1,11 +1,10 @@
-extern crate rustyspans;
-
 use std::cmp::Ordering;
-use rustyspans::{BoundType, Bound};
-use rustyspans::Bound::*;
+
+use super::{BoundType, Bound};
+use super::Bound::*;
 
 #[test]
-fn equality() {
+fn test_equality() {
     assert_eq!(Unbounded::<i32>, Unbounded);
     assert_eq!(Inclusive(1), Inclusive(1));
     assert_eq!(Exclusive(1), Exclusive(1));
@@ -18,7 +17,7 @@ fn equality() {
 }
 
 #[test]
-fn compare_bounds_lower() {
+fn test_compare_bounds_lower() {
     fn cmp<T: PartialOrd>(a: &Bound<T>, b: &Bound<T>) -> Ordering {
         BoundType::Lower(&a).partial_cmp(&BoundType::Lower(&b)).unwrap()
     }
@@ -38,7 +37,7 @@ fn compare_bounds_lower() {
 }
 
 #[test]
-fn compare_bounds_upper() {
+fn test_compare_bounds_upper() {
     fn cmp<T: PartialOrd>(a: &Bound<T>, b: &Bound<T>) -> Ordering {
         BoundType::Upper(&a).partial_cmp(&BoundType::Upper(&b)).unwrap()
     }

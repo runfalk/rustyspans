@@ -219,3 +219,8 @@ impl<T: PartialOrd> PartialOrd for Range<T> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    include!("test_range.rs");
+}
