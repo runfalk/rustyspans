@@ -4,8 +4,9 @@ use std::ops::{Range as RangeOp, RangeFrom, RangeTo, RangeFull};
 
 use super::bound::{BoundType, Bound};
 
-// Unpack Bound and Range into scope to reduce verbosity
+// Unpack enums into scope to reduce verbosity
 use super::bound::Bound::*;
+use super::bound::BoundType::*;
 use self::Range::*;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -16,8 +17,10 @@ pub struct Interval<T> {
 
 impl<T: PartialOrd> PartialOrd for Interval<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match BoundType::Lower(&self.lower).partial_cmp(&BoundType::Lower(&other.lower)) {
-            Some(Ordering::Equal) => BoundType::Upper(&self.upper).partial_cmp(&BoundType::Upper(&other.upper)),
+        match Lower(&self.lower).partial_cmp(&Lower(&other.lower)) {
+            Some(Ordering::Equal) => {
+                Upper(&self.upper).partial_cmp(&Upper(&other.upper))
+            },
             cmp => cmp,
         }
     }
@@ -193,17 +196,17 @@ impl<T: fmt::Display> fmt::Display for Range<T> {
         match *self {
             Inhabited(ref range) => {
                 match range.lower {
-                    Bound::Inclusive(ref x) => write!(f, "[{}", x),
-                    Bound::Exclusive(ref x) => write!(f, "({}", x),
-                    Bound::Unbounded => write!(f, "("),
+                    Inclusive(ref x) => write!(f, "[{}", x),
+                    Exclusive(ref x) => write!(f, "({}", x),
+                    Unbounded => write!(f, "("),
                 }?;
 
                 write!(f, ",")?;
 
                 match range.upper {
-                    Bound::Inclusive(ref x) => write!(f, "{}]", x),
-                    Bound::Exclusive(ref x) => write!(f, "{})", x),
-                    Bound::Unbounded => write!(f, ")"),
+                    Inclusive(ref x) => write!(f, "{}]", x),
+                    Exclusive(ref x) => write!(f, "{})", x),
+                    Unbounded => write!(f, ")"),
                 }
             },
             Empty => write!(f, "(empty)"),
